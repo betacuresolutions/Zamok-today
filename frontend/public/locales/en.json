@@ -155,6 +155,7 @@
   "auth.createAccount": "Create account",
   "auth.signIn": "Sign in",
   "auth.backToLogin": "Back to sign in",
+  "auth.backToHome": "Back to home",
   "auth.pleaseWait": "Please wait…",
   "auth.submit.continue": "Continue",
   "auth.submit.register": "Create account",

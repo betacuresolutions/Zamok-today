@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { FiChevronDown, FiPhone, FiSearch, FiX } from "react-icons/fi";
 import styles from "@/components/auth/AuthShell.module.css";
@@ -19,6 +19,27 @@ function FlagIcon({ region, className }: { region: string; className?: string })
 }
 
 type PanelCoords = { top: number; left: number; width: number; maxHeight: number };
+
+function computeDialPanelCoords(trigger: HTMLElement): PanelCoords {
+  const rect = trigger.getBoundingClientRect();
+  const gap = 6;
+  const viewportPadding = 12;
+  const panelWidth = Math.max(rect.width, 280);
+  const preferredHeight = 300;
+  const spaceBelow = window.innerHeight - rect.bottom - gap - viewportPadding;
+  const spaceAbove = rect.top - gap - viewportPadding;
+  const openAbove = spaceBelow < 180 && spaceAbove > spaceBelow;
+  const maxHeight = Math.min(preferredHeight, Math.max(160, openAbove ? spaceAbove : spaceBelow));
+  const top = openAbove ? rect.top - gap - maxHeight : rect.bottom + gap;
+  const maxLeft = window.innerWidth - panelWidth - viewportPadding;
+
+  return {
+    top: Math.max(viewportPadding, top),
+    left: Math.max(viewportPadding, Math.min(rect.left, maxLeft)),
+    width: panelWidth,
+    maxHeight
+  };
+}
 
 export function PhoneNumberField({
   id,
@@ -43,7 +64,7 @@ export function PhoneNumberField({
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [coords, setCoords] = useState<PanelCoords>({ top: 0, left: 0, width: 300, maxHeight: 320 });
+  const [coords, setCoords] = useState<PanelCoords | null>(null);
 
   const localeTag = String(language || "en").split("-")[0] || "en";
   const countries = useMemo(() => buildPhoneCountryList(localeTag), [localeTag]);
@@ -77,31 +98,34 @@ export function PhoneNumberField({
   const updateCoords = useCallback(() => {
     const el = triggerRef.current;
     if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const gap = 6;
-    const viewportPadding = 12;
-    const preferredHeight = 300;
-    const spaceBelow = window.innerHeight - rect.bottom - gap - viewportPadding;
-    const spaceAbove = rect.top - gap - viewportPadding;
-    const openAbove = spaceBelow < 180 && spaceAbove > spaceBelow;
-    const maxHeight = Math.min(preferredHeight, Math.max(160, openAbove ? spaceAbove : spaceBelow));
-    const top = openAbove ? rect.top - gap - maxHeight : rect.bottom + gap;
-
-    setCoords({
-      top: Math.max(viewportPadding, top),
-      left: Math.max(viewportPadding, Math.min(rect.left, window.innerWidth - 280 - viewportPadding)),
-      width: Math.max(rect.width, 280),
-      maxHeight
-    });
+    setCoords(computeDialPanelCoords(el));
   }, []);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
+  function toggleDialPanel() {
+    if (disabled) return;
+    if (open) {
+      setOpen(false);
+      setCoords(null);
+      setQuery("");
+      return;
+    }
+    const el = triggerRef.current;
+    if (!el) return;
+    setCoords(computeDialPanelCoords(el));
+    setOpen(true);
+  }
+
+  useLayoutEffect(() => {
     if (!open) return;
     updateCoords();
+  }, [open, updateCoords]);
+
+  useEffect(() => {
+    if (!open) return;
     const onLayout = () => updateCoords();
     window.addEventListener("resize", onLayout);
     window.addEventListener("scroll", onLayout, true);
@@ -134,12 +158,13 @@ export function PhoneNumberField({
   function pick(c: PhoneCountryOption) {
     onCountryChange(c.code);
     setOpen(false);
+    setCoords(null);
     setQuery("");
   }
 
   const dialLabel = selected ? formatDialCode(selected.code) : "+";
 
-  const panel = open ? (
+  const panel = open && coords ? (
     <div
       ref={panelRef}
       role="dialog"
@@ -197,7 +222,7 @@ export function PhoneNumberField({
           type="button"
           disabled={disabled}
           className={styles.dialButton}
-          onClick={() => !disabled && setOpen((v) => !v)}
+          onClick={toggleDialPanel}
           aria-haspopup="listbox"
           aria-expanded={open}
           aria-label={t("auth.countryCodeLabel")}

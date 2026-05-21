@@ -66,6 +66,12 @@ export default function RegisterPage() {
           <Link href="/login" className={styles.link}>
             {t("auth.signIn")}
           </Link>
+          <span className={styles.footerSep} aria-hidden>
+            ·
+          </span>
+          <Link href="/" className={styles.link}>
+            {t("auth.backToHome") === "auth.backToHome" ? t("nav.home") : t("auth.backToHome")}
+          </Link>
         </>
       }
     >

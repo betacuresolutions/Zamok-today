@@ -91,9 +91,17 @@ function VerifyEmailContent() {
     <AuthShell
       subtitle={t("auth.verify.subtitle")}
       footer={
-        <Link href="/" className={styles.link}>
-          {t("nav.home")}
-        </Link>
+        <>
+          <Link href="/" className={styles.link}>
+            {t("auth.backToHome") === "auth.backToHome" ? t("nav.home") : t("auth.backToHome")}
+          </Link>
+          <span className={styles.footerSep} aria-hidden>
+            ·
+          </span>
+          <Link href="/login" className={styles.link}>
+            {t("auth.signIn")}
+          </Link>
+        </>
       }
     >
       <div className={styles.verifyBlock}>

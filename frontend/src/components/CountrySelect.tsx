@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { FiCheck, FiChevronDown, FiSearch, FiX } from "react-icons/fi";
 import { buildCountryList, type CountryOption } from "@/lib/countries";
@@ -24,6 +24,27 @@ function FlagIcon({ region }: { region: string }) {
 
 type PanelCoords = { top: number; left: number; width: number; maxHeight: number };
 
+function computeCountryPanelCoords(trigger: HTMLElement): PanelCoords {
+  const rect = trigger.getBoundingClientRect();
+  const gap = 6;
+  const viewportPadding = 12;
+  const panelWidth = Math.max(rect.width, 280);
+  const preferredHeight = 320;
+  const spaceBelow = window.innerHeight - rect.bottom - gap - viewportPadding;
+  const spaceAbove = rect.top - gap - viewportPadding;
+  const openAbove = spaceBelow < 200 && spaceAbove > spaceBelow;
+  const maxHeight = Math.min(preferredHeight, Math.max(160, openAbove ? spaceAbove : spaceBelow));
+  const top = openAbove ? rect.top - gap - maxHeight : rect.bottom + gap;
+  const maxLeft = window.innerWidth - panelWidth - viewportPadding;
+
+  return {
+    top: Math.max(viewportPadding, top),
+    left: Math.max(viewportPadding, Math.min(rect.left, maxLeft)),
+    width: panelWidth,
+    maxHeight
+  };
+}
+
 export function CountrySelect({
   id,
   value,
@@ -45,7 +66,7 @@ export function CountrySelect({
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [coords, setCoords] = useState<PanelCoords>({ top: 0, left: 0, width: 280, maxHeight: 320 });
+  const [coords, setCoords] = useState<PanelCoords | null>(null);
 
   const countries = useMemo(() => buildCountryList("en"), []);
 
@@ -67,34 +88,20 @@ export function CountrySelect({
   const updateCoords = useCallback(() => {
     const el = triggerRef.current;
     if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const gap = 6;
-    const viewportPadding = 12;
-    const preferredHeight = 320;
-    const spaceBelow = window.innerHeight - rect.bottom - gap - viewportPadding;
-    const spaceAbove = rect.top - gap - viewportPadding;
-    const openAbove = spaceBelow < 200 && spaceAbove > spaceBelow;
-    const maxHeight = Math.min(
-      preferredHeight,
-      Math.max(160, openAbove ? spaceAbove : spaceBelow)
-    );
-    const top = openAbove ? rect.top - gap - maxHeight : rect.bottom + gap;
-
-    setCoords({
-      top: Math.max(viewportPadding, top),
-      left: Math.max(viewportPadding, Math.min(rect.left, window.innerWidth - rect.width - viewportPadding)),
-      width: rect.width,
-      maxHeight
-    });
+    setCoords(computeCountryPanelCoords(el));
   }, []);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) return;
     updateCoords();
+  }, [open, updateCoords]);
+
+  useEffect(() => {
+    if (!open) return;
     const onLayout = () => updateCoords();
     window.addEventListener("resize", onLayout);
     window.addEventListener("scroll", onLayout, true);
@@ -127,21 +134,27 @@ export function CountrySelect({
   function pick(country: CountryOption) {
     onChange(country.code, country.name);
     setOpen(false);
+    setCoords(null);
     setQuery("");
   }
 
   function toggleOpen() {
     if (disabled) return;
-    setOpen((prev) => {
-      const next = !prev;
-      if (!next) setQuery("");
-      return next;
-    });
+    if (open) {
+      setOpen(false);
+      setCoords(null);
+      setQuery("");
+      return;
+    }
+    const el = triggerRef.current;
+    if (!el) return;
+    setCoords(computeCountryPanelCoords(el));
+    setOpen(true);
   }
 
   const label = selected?.name || t("wallet.countrySelectPlaceholder");
 
-  const panel = open ? (
+  const panel = open && coords ? (
     <div
       ref={panelRef}
       role="dialog"

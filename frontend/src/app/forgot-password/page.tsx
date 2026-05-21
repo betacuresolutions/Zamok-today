@@ -38,9 +38,17 @@ export default function ForgotPasswordPage() {
     <AuthShell
       subtitle={t("auth.forgot.subtitle")}
       footer={
-        <Link href="/login" className={styles.link}>
-          {t("auth.backToLogin")}
-        </Link>
+        <>
+          <Link href="/login" className={styles.link}>
+            {t("auth.backToLogin")}
+          </Link>
+          <span className={styles.footerSep} aria-hidden>
+            ·
+          </span>
+          <Link href="/" className={styles.link}>
+            {t("auth.backToHome") === "auth.backToHome" ? t("nav.home") : t("auth.backToHome")}
+          </Link>
+        </>
       }
     >
       <form onSubmit={onSubmit}>

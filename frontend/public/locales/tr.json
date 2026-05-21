@@ -121,6 +121,7 @@
   "auth.createAccount": "Oluştur",
   "auth.signIn": "Giriş yap",
   "auth.backToLogin": "Girişe dön",
+  "auth.backToHome": "Ana sayfaya dön",
   "auth.pleaseWait": "Lütfen bekleyin…",
   "auth.submit.continue": "Devam Et",
   "auth.submit.register": "Hesap oluştur",

@@ -1,3 +1,5 @@
+import { CheapFlightTicketsGuide } from "@/components/flights/CheapFlightTicketsGuide";
+import { FlightsFaq } from "@/components/FlightsFaq";
 import { Header } from "@/components/Header";
 import { PopularDestinations } from "@/components/PopularDestinations";
 import { PriceMap } from "@/components/PriceMap";
@@ -15,7 +17,15 @@ export default function HomePage() {
           </div>
 
           <div className="mt-8">
+            <CheapFlightTicketsGuide />
+          </div>
+
+          <div className="mt-8">
             <PriceMap />
+          </div>
+
+          <div className="mt-8">
+            <FlightsFaq />
           </div>
         </div>
       </section>

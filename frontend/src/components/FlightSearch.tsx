@@ -13,6 +13,7 @@ import { FiCalendar, FiMapPin, FiRepeat, FiSearch, FiShuffle, FiUser, FiX } from
 import { TwoMonthDatePicker } from "@/components/date/TwoMonthDatePicker";
 import { MobileDateRangePicker } from "@/components/date/MobileDateRangePicker";
 import { PassengersPicker } from "@/components/PassengersPicker";
+import { SearchOpenBookingToggle } from "@/components/search/SearchOpenBookingToggle";
 import { buildFlightSearchResultsHref, SITE_DEFAULT_TO_CITY, SITE_PRIMARY_FROM_CITY } from "@/lib/siteDefaults";
 
 const cabins = [
@@ -757,34 +758,7 @@ function FlightSearchContent({
             </Link>
           </div>
 
-          <label className="inline-flex select-none items-center gap-3 text-white/90">
-            <span className="relative inline-flex items-center">
-              <input
-                type="checkbox"
-                checked={openBooking}
-                onChange={(e) => setOpenBooking(e.target.checked)}
-                className="peer sr-only"
-              />
-              <span
-                className={[
-                  "h-6 w-11 rounded-full ring-1 transition",
-                  "ring-white/25 bg-white/15",
-                  "peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-white/80 peer-focus-visible:outline-offset-2",
-                  "peer-checked:bg-white peer-checked:ring-white"
-                ].join(" ")}
-                aria-hidden="true"
-              />
-              <span
-                className={[
-                  "pointer-events-none absolute left-0.5 top-0.5 h-5 w-5 rounded-full transition",
-                  "bg-white shadow-sm",
-                  "peer-checked:translate-x-5 peer-checked:bg-brand-600"
-                ].join(" ")}
-                aria-hidden="true"
-              />
-            </span>
-            <span className="font-semibold">{t("search.openBooking")}</span>
-          </label>
+          <SearchOpenBookingToggle checked={openBooking} onChange={setOpenBooking} />
           </div>
           </>
         ) : null}
@@ -794,7 +768,7 @@ function FlightSearchContent({
 }
 
 export function FlightSearch({
-  stickyEnabled = true,
+  stickyEnabled = false,
   forceCompact = false,
   showBottomActions = true,
   initialFrom = SITE_PRIMARY_FROM_CITY,
@@ -837,7 +811,7 @@ export function FlightSearch({
   const [tab, setTab] = useState<"flights" | "hotels">("flights");
   const [openBooking, setOpenBooking] = useState(true);
   const [activeDateField, setActiveDateField] = useState<null | "depart" | "return">(null);
-  const stickyVisible = false;
+  const [stickyVisible, setStickyVisible] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [reservedHeight, setReservedHeight] = useState(0);
   const [activeSuggestField, setActiveSuggestField] = useState<null | "from" | "to">(null);
@@ -851,6 +825,7 @@ export function FlightSearch({
   const [isFromDirty, setIsFromDirty] = useState(false);
   const [isToDirty, setIsToDirty] = useState(false);
   const contentRef = useRef<HTMLDivElement | null>(null);
+  const stickySentinelRef = useRef<HTMLDivElement | null>(null);
   const fromBlurTimerRef = useRef<number | null>(null);
   const toBlurTimerRef = useRef<number | null>(null);
   const suppressFromBlurUntilRef = useRef(0);
@@ -875,6 +850,26 @@ export function FlightSearch({
     window.addEventListener("resize", syncViewport);
     return () => window.removeEventListener("resize", syncViewport);
   }, []);
+
+  useEffect(() => {
+    if (!stickyEnabled || isMobileViewport) {
+      setStickyVisible(false);
+      return;
+    }
+
+    const node = stickySentinelRef.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setStickyVisible(!entry.isIntersecting);
+      },
+      { threshold: 0, rootMargin: "-64px 0px 0px 0px" }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [stickyEnabled, isMobileViewport]);
 
   useEffect(() => {
     if (!returnDate) return;
@@ -1297,17 +1292,18 @@ export function FlightSearch({
   };
 
   return (
-    <div style={{ height: isPinnedCompact ? `${reservedHeight}px` : undefined }}>
-      <div
-        ref={contentRef}
-        className={cn(
-          isPinnedCompact
-            ? "fixed left-0 right-0 top-16 z-40 bg-brand-600/95 dark:bg-black/95 backdrop-blur px-4 py-2 shadow-sm"
-            : "relative"
-        )}
-      >
-        <div className={cn(isPinnedCompact ? "mx-auto w-full max-w-[1440px] px-4" : "")}>
-          <FlightSearchContent
+    <>
+      <div style={{ height: isPinnedCompact ? `${reservedHeight}px` : undefined }}>
+        <div
+          ref={contentRef}
+          className={cn(
+            isPinnedCompact
+              ? "fixed left-0 right-0 top-14 z-40 bg-brand-600/95 shadow-sm backdrop-blur dark:bg-black/95 lg:top-16"
+              : "relative"
+          )}
+        >
+          <div className={cn(isPinnedCompact ? "mx-auto w-full max-w-[1440px] px-4" : "")}>
+            <FlightSearchContent
             from={from}
             setFrom={handleFromChange}
             to={to}
@@ -1347,10 +1343,12 @@ export function FlightSearch({
             pickersActive
             showBottomActions={showBottomActions && !mobilePinned}
             showTabs={!compactMode && !mobilePinned}
-          />
+            />
+          </div>
         </div>
       </div>
-    </div>
+      {stickyEnabled ? <div ref={stickySentinelRef} className="h-px w-full" aria-hidden /> : null}
+    </>
   );
 }
 

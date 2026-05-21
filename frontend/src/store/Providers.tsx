@@ -6,6 +6,9 @@ import { store } from "@/store/store";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setLocale } from "@/store/localeSlice";
 import { setFlightSearchForm } from "@/store/flightsSlice";
+import { setCarPreferences, setCarSearchForm } from "@/store/carsSlice";
+import type { CarSearchForm } from "@/lib/carSearch";
+import { setHotelPreferences, setHotelSearchForm } from "@/store/hotelsSlice";
 import { env } from "@/lib/env";
 import { fetchAuthUser } from "@/store/authSlice";
 function LocalePersistence() {
@@ -74,6 +77,102 @@ function FlightSearchPersistence() {
       // ignore persistence failures
     }
   }, [searchForm]);
+
+  return null;
+}
+
+function HotelSearchPersistence() {
+  const dispatch = useAppDispatch();
+  const searchForm = useAppSelector((s) => s.hotels.searchForm);
+  const preferences = useAppSelector((s) => s.hotels.preferences);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("zamok_hotel_search_form");
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Partial<{
+        destination: string;
+        checkIn: string;
+        checkOut: string;
+        guests: { adults: number; children: number; rooms: number };
+      }>;
+      dispatch(setHotelSearchForm(parsed));
+    } catch {
+      // ignore malformed local data
+    }
+
+    try {
+      const prefsRaw = window.localStorage.getItem("zamok_hotel_search_prefs");
+      if (!prefsRaw) return;
+      const prefs = JSON.parse(prefsRaw) as Partial<{
+        travelForWork: boolean;
+        openBookingInNewTab: boolean;
+      }>;
+      dispatch(setHotelPreferences(prefs));
+    } catch {
+      // ignore malformed local data
+    }
+  }, [dispatch]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("zamok_hotel_search_form", JSON.stringify(searchForm));
+    } catch {
+      // ignore persistence failures
+    }
+  }, [searchForm]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("zamok_hotel_search_prefs", JSON.stringify(preferences));
+    } catch {
+      // ignore persistence failures
+    }
+  }, [preferences]);
+
+  return null;
+}
+
+function CarSearchPersistence() {
+  const dispatch = useAppDispatch();
+  const searchForm = useAppSelector((s) => s.cars.searchForm);
+  const preferences = useAppSelector((s) => s.cars.preferences);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("zamok_car_search_form");
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Partial<CarSearchForm>;
+      dispatch(setCarSearchForm(parsed));
+    } catch {
+      // ignore malformed local data
+    }
+
+    try {
+      const prefsRaw = window.localStorage.getItem("zamok_car_search_prefs");
+      if (!prefsRaw) return;
+      const prefs = JSON.parse(prefsRaw) as Partial<{ openBookingInNewTab: boolean }>;
+      dispatch(setCarPreferences(prefs));
+    } catch {
+      // ignore malformed local data
+    }
+  }, [dispatch]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("zamok_car_search_form", JSON.stringify(searchForm));
+    } catch {
+      // ignore persistence failures
+    }
+  }, [searchForm]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("zamok_car_search_prefs", JSON.stringify(preferences));
+    } catch {
+      // ignore persistence failures
+    }
+  }, [preferences]);
 
   return null;
 }
@@ -148,6 +247,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <Provider store={store}>
       <LocalePersistence />
       <FlightSearchPersistence />
+      <HotelSearchPersistence />
+      <CarSearchPersistence />
       <AuthBootstrap />
       <LocationBootstrap />
       {children}

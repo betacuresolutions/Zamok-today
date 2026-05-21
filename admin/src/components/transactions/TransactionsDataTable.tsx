@@ -22,6 +22,9 @@ export type AdminTransactionRow = {
   userId: string;
   userFullName: string;
   userEmail: string;
+  userPhone: string;
+  userPhoneDisplay: string;
+  userContact: string;
   type: "top_up" | "payment" | "refund";
   description: string;
   descriptionDisplay: string;
@@ -67,7 +70,7 @@ export function TransactionsDataTable() {
   const labels = useMemo(
     () => ({
       user: t("table.name"),
-      email: t("table.email"),
+      contact: t("table.emailOrPhone"),
       type: t("table.type"),
       description: t("table.description"),
       amount: t("table.amount"),
@@ -134,11 +137,16 @@ export function TransactionsDataTable() {
         }
       },
       {
-        data: "userEmail",
+        data: "userContact",
         orderable: true,
         defaultContent: labels.dash,
-        render: (data: string) => {
-          const v = String(data || "").trim();
+        render: (data: string, type: string, row: AdminTransactionRow) => {
+          const v =
+            String(data || "").trim() ||
+            row.userEmail?.trim() ||
+            row.userPhoneDisplay?.trim() ||
+            row.userPhone?.trim();
+          if (type !== "display") return v || "";
           return v ? escapeHtml(v) : labels.dash;
         }
       },
@@ -293,7 +301,7 @@ export function TransactionsDataTable() {
           <thead>
             <tr>
               <th>{labels.user}</th>
-              <th>{labels.email}</th>
+              <th>{labels.contact}</th>
               <th>{labels.type}</th>
               <th>{labels.description}</th>
               <th className="text-right">{labels.amount}</th>

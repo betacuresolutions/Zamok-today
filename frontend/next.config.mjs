@@ -7,6 +7,11 @@ const nextConfig = {
         protocol: "https",
         hostname: "img.avs.io",
         pathname: "/explore/cities/**"
+      },
+      {
+        protocol: "https",
+        hostname: "s3.eu-central-1.amazonaws.com",
+        pathname: "/static.obilet.com/images/hotel/**"
       }
     ]
   }

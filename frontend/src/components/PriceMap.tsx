@@ -57,41 +57,6 @@ export function PriceMap() {
           </Link>
         </div>
       </section>
-
-      <section className="rounded-3xl bg-white dark:bg-black p-6 shadow-sm ring-1 ring-slate-200 dark:ring-white/10">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3 text-sm text-slate-700 dark:text-white/80">
-            <FiInfo className="h-8 w-8 md:h-4 md:w-4 text-slate-400 dark:text-white/40" />
-            <span>{t("pricemap.caption")}</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setHowItWorksOpen((v) => !v)}
-            className="inline-flex items-center gap-2 text-sm font-semibold text-brand-600 hover:text-brand-700 dark:text-white dark:hover:text-white/85"
-            aria-expanded={howItWorksOpen}
-            aria-controls="pricemap-how-it-works"
-          >
-            {t("pricemap.howItWorks")}
-            <FiChevronRight className={["h-4 w-4 transition", howItWorksOpen ? "rotate-90" : ""].join(" ")} />
-          </button>
-        </div>
-
-        <div
-          id="pricemap-how-it-works"
-          ref={howRef}
-          className={[
-            "overflow-hidden transition-[max-height,opacity,transform] duration-300",
-            howItWorksOpen ? "max-h-[280px] md:max-h-[240px] opacity-100 translate-y-0" : "max-h-0 opacity-0 -translate-y-1"
-          ].join(" ")}
-        >
-          <div className="mt-4 bg-white px-6 py-5 ring-1 ring-slate-200 dark:bg-black dark:ring-white/10">
-            <div className="text-base font-bold text-slate-900 dark:text-white">
-              {t("pricemap.howItWorksTitle")}
-            </div>
-            <div className="mt-3 text-sm text-slate-700 dark:text-white/70">{t("pricemap.howItWorksBody")}</div>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }

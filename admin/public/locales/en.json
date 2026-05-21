@@ -65,6 +65,7 @@
   "table.comingSoon": "Coming soon",
   "table.id": "ID",
   "table.email": "Email",
+  "table.emailOrPhone": "Email / Phone",
   "table.name": "Name",
   "table.date": "Date",
   "table.amount": "Amount",

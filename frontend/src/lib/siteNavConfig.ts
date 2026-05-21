@@ -39,10 +39,10 @@ export const INSURANCE_ITEM_HREF: Partial<Record<InsuranceMenuKey, string>> = {
 /** Primary row in the header center (before Insurance). */
 export const HEADER_CENTER_NAV: ReadonlyArray<{ href: string; labelKey: string }> = [
   { href: "/", labelKey: "tabs.flights" },
-  { href: "#", labelKey: "tabs.hotels" },
+  { href: "/hotels", labelKey: "tabs.hotels" },
   { href: "#", labelKey: "nav.buses" },
   { href: "#", labelKey: "nav.ferries" },
-  { href: "#", labelKey: "nav.cars" }
+  { href: "/cars", labelKey: "nav.cars" }
 ];
 
 /** Support pill uses the same placeholder until a route exists. */

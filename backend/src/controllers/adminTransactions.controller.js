@@ -1,3 +1,4 @@
+import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { WalletTransaction } from "../models/WalletTransaction.js";
 import { parseDataTablesRequest } from "../utils/dataTablesRequest.js";
 import { PRIMARY_WALLET_CURRENCY } from "../config/wallet.js";
@@ -9,7 +10,8 @@ const SORTABLE_FIELDS = new Set([
   "type",
   "description",
   "userFullName",
-  "userEmail"
+  "userEmail",
+  "userContact"
 ]);
 
 const SORT_FIELD_MAP = {
@@ -19,8 +21,21 @@ const SORT_FIELD_MAP = {
   type: "type",
   description: "description",
   userFullName: "user.fullName",
-  userEmail: "user.email"
+  userEmail: "userContactSort",
+  userContact: "userContactSort"
 };
+
+function formatPhoneDisplay(digits) {
+  const d = String(digits || "").replace(/\D/g, "");
+  if (!d) return "";
+  try {
+    const parsed = parsePhoneNumberFromString(`+${d}`);
+    if (parsed?.isValid()) return parsed.formatInternational();
+  } catch {
+    // fall through
+  }
+  return `+${d}`;
+}
 
 function escapeRegex(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -75,7 +90,23 @@ function lookupStages() {
         as: "user"
       }
     },
-    { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } }
+    { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
+    {
+      $addFields: {
+        userContactSort: {
+          $let: {
+            vars: { email: { $ifNull: ["$user.email", ""] } },
+            in: {
+              $cond: [
+                { $gt: [{ $strLenCP: "$$email" }, 0] },
+                { $toLower: "$$email" },
+                { $toLower: { $ifNull: ["$user.phone", ""] } }
+              ]
+            }
+          }
+        }
+      }
+    }
   ];
 }
 
@@ -124,12 +155,19 @@ function transactionToRow(doc) {
   const currency = String(doc.currency || PRIMARY_WALLET_CURRENCY).toUpperCase();
   const description = String(doc.description || "").trim() || "Wallet top-up";
   const cardLast4 = String(doc.cardLast4 || "").trim();
+  const userEmail = String(user.email || "").trim();
+  const userPhone = String(user.phone || "").trim();
+  const userPhoneDisplay = formatPhoneDisplay(userPhone);
+  const userContact = userEmail || userPhoneDisplay || "";
 
   return {
     id: String(doc._id),
     userId: doc.userId ? String(doc.userId) : "",
     userFullName: String(user.fullName || "").trim(),
-    userEmail: String(user.email || "").trim(),
+    userEmail,
+    userPhone,
+    userPhoneDisplay,
+    userContact,
     type: doc.type || "top_up",
     description,
     descriptionDisplay: cardLast4 ? `${description} · •••• ${cardLast4}` : description,

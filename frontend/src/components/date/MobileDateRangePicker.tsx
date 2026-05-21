@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { FiCalendar, FiX } from "react-icons/fi";
+import { normalizeRangeSelection } from "@/lib/dateRange";
 
 type Props = {
   departDate: string;
@@ -12,6 +13,8 @@ type Props = {
   onClose: () => void;
   departureLabel: string;
   returnLabel: string;
+  /** Hotels: click start → end → next click restarts range (clears end, sets new start). */
+  cycleRangeOnDayClick?: boolean;
 };
 
 function pad2(n: number) {
@@ -64,7 +67,8 @@ export function MobileDateRangePicker({
   onChange,
   onClose,
   departureLabel,
-  returnLabel
+  returnLabel,
+  cycleRangeOnDayClick = false
 }: Props) {
   const panelRef = useRef<HTMLDivElement | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -111,6 +115,11 @@ export function MobileDateRangePicker({
 
   function selectDay(day: Date) {
     const ymd = toYmd(day);
+    if (cycleRangeOnDayClick) {
+      const next = normalizeRangeSelection(departDate, returnDate, ymd);
+      onChange({ departDate: next.from, returnDate: next.to });
+      return;
+    }
     if (activeField === "depart") {
       const nextReturn = returnDate && returnDate < ymd ? "" : returnDate;
       onChange({ departDate: ymd, returnDate: nextReturn });

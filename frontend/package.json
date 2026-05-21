@@ -23,6 +23,14 @@
     "i18n:insurance-partners": "node tools/sync-insurance-partners-i18n.mjs",
     "i18n:translate-insurance-partners": "node scripts/translate-insurance-partners-i18n.mjs",
     "i18n:auth": "node tools/sync-auth-i18n.mjs",
+    "i18n:hotels": "node tools/sync-hotels-i18n.mjs && node tools/verify-hotels-i18n.mjs",
+    "i18n:translate-hotels": "node scripts/translate-hotels-i18n.mjs",
+    "i18n:cars": "node tools/sync-cars-i18n.mjs && node tools/verify-cars-i18n.mjs",
+    "i18n:translate-cars": "node scripts/translate-cars-i18n.mjs",
+    "i18n:travel-faq": "node tools/sync-travel-faq-i18n.mjs",
+    "i18n:translate-travel-faq": "node scripts/translate-travel-faq-i18n.mjs",
+    "i18n:flights-cheap-guide": "node tools/sync-flights-cheap-guide-i18n.mjs && node tools/verify-flights-cheap-guide-i18n.mjs",
+    "i18n:translate-flights-cheap-guide": "node scripts/translate-flights-cheap-guide-i18n.mjs",
     "i18n:translate-auth": "node scripts/translate-auth-i18n.mjs"
   },
   "dependencies": {

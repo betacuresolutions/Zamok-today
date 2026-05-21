@@ -1,5 +1,14 @@
-import { CarRouteSearchClient } from "./CarRouteSearchClient";
+import { Suspense } from "react";
+import { CarRouteSearchClient } from "@/app/search/cars/CarRouteSearchClient";
 
 export default function CarSearchPage() {
-  return <CarRouteSearchClient />;
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-dvh bg-slate-50 dark:bg-black" aria-busy="true" />
+      }
+    >
+      <CarRouteSearchClient />
+    </Suspense>
+  );
 }

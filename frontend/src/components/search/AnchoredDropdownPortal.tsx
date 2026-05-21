@@ -12,6 +12,8 @@ type Props = {
   className?: string;
   gap?: number;
   maxWidth?: number;
+  /** Align panel's right edge to anchor (panel grows left). Useful for fields on the right of the search bar. */
+  align?: "left" | "right";
 };
 
 export function AnchoredDropdownPortal({
@@ -21,10 +23,11 @@ export function AnchoredDropdownPortal({
   children,
   className,
   gap = 8,
-  maxWidth = 820
+  maxWidth = 820,
+  align = "left"
 }: Props) {
   const [mounted, setMounted] = useState(false);
-  const position = useAnchoredDropdownPosition(anchorRef, open, { gap, maxWidth });
+  const position = useAnchoredDropdownPosition(anchorRef, open, { gap, maxWidth, align });
 
   useEffect(() => {
     setMounted(true);

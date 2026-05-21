@@ -6,7 +6,12 @@ import { store } from "@/store/store";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setLocale } from "@/store/localeSlice";
 import { setFlightSearchForm } from "@/store/flightsSlice";
+import { setBusPreferences, setBusSearchForm } from "@/store/busesSlice";
+import { setFerryPreferences, setFerrySearchForm } from "@/store/ferriesSlice";
+import { normalizeFerryPassengers } from "@/lib/ferryPassengers";
+import type { FerrySearchForm } from "@/lib/ferrySearch";
 import { setCarPreferences, setCarSearchForm } from "@/store/carsSlice";
+import type { BusSearchForm } from "@/lib/busSearch";
 import type { CarSearchForm } from "@/lib/carSearch";
 import { setHotelPreferences, setHotelSearchForm } from "@/store/hotelsSlice";
 import { env } from "@/lib/env";
@@ -133,6 +138,99 @@ function HotelSearchPersistence() {
   return null;
 }
 
+function BusSearchPersistence() {
+  const dispatch = useAppDispatch();
+  const searchForm = useAppSelector((s) => s.buses.searchForm);
+  const preferences = useAppSelector((s) => s.buses.preferences);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("zamok_bus_search_form");
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Partial<BusSearchForm>;
+      dispatch(setBusSearchForm(parsed));
+    } catch {
+      // ignore malformed local data
+    }
+
+    try {
+      const prefsRaw = window.localStorage.getItem("zamok_bus_search_prefs");
+      if (!prefsRaw) return;
+      const prefs = JSON.parse(prefsRaw) as Partial<{ openBookingInNewTab: boolean }>;
+      dispatch(setBusPreferences(prefs));
+    } catch {
+      // ignore malformed local data
+    }
+  }, [dispatch]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("zamok_bus_search_form", JSON.stringify(searchForm));
+    } catch {
+      // ignore persistence failures
+    }
+  }, [searchForm]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("zamok_bus_search_prefs", JSON.stringify(preferences));
+    } catch {
+      // ignore persistence failures
+    }
+  }, [preferences]);
+
+  return null;
+}
+
+function FerrySearchPersistence() {
+  const dispatch = useAppDispatch();
+  const searchForm = useAppSelector((s) => s.ferries.searchForm);
+  const preferences = useAppSelector((s) => s.ferries.preferences);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("zamok_ferry_search_form");
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Partial<FerrySearchForm>;
+      dispatch(
+        setFerrySearchForm({
+          ...parsed,
+          passengers: normalizeFerryPassengers(parsed.passengers)
+        })
+      );
+    } catch {
+      // ignore malformed local data
+    }
+
+    try {
+      const prefsRaw = window.localStorage.getItem("zamok_ferry_search_prefs");
+      if (!prefsRaw) return;
+      const prefs = JSON.parse(prefsRaw) as Partial<{ openBookingInNewTab: boolean }>;
+      dispatch(setFerryPreferences(prefs));
+    } catch {
+      // ignore malformed local data
+    }
+  }, [dispatch]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("zamok_ferry_search_form", JSON.stringify(searchForm));
+    } catch {
+      // ignore persistence failures
+    }
+  }, [searchForm]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("zamok_ferry_search_prefs", JSON.stringify(preferences));
+    } catch {
+      // ignore persistence failures
+    }
+  }, [preferences]);
+
+  return null;
+}
+
 function CarSearchPersistence() {
   const dispatch = useAppDispatch();
   const searchForm = useAppSelector((s) => s.cars.searchForm);
@@ -248,6 +346,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <LocalePersistence />
       <FlightSearchPersistence />
       <HotelSearchPersistence />
+      <BusSearchPersistence />
+      <FerrySearchPersistence />
       <CarSearchPersistence />
       <AuthBootstrap />
       <LocationBootstrap />

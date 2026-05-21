@@ -10,6 +10,7 @@ export function CarTimeField({
   value,
   onChange,
   className,
+  layout,
   open,
   onOpenChange
 }: {
@@ -17,6 +18,7 @@ export function CarTimeField({
   value: string;
   onChange: (value: string) => void;
   className?: string;
+  layout?: "mobile" | "desktop";
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
@@ -27,6 +29,7 @@ export function CarTimeField({
       options={timeOptions}
       onChange={onChange}
       className={className}
+      layout={layout}
       open={open}
       onOpenChange={onOpenChange}
     />

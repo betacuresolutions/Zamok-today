@@ -40,8 +40,8 @@ export const INSURANCE_ITEM_HREF: Partial<Record<InsuranceMenuKey, string>> = {
 export const HEADER_CENTER_NAV: ReadonlyArray<{ href: string; labelKey: string }> = [
   { href: "/", labelKey: "tabs.flights" },
   { href: "/hotels", labelKey: "tabs.hotels" },
-  { href: "#", labelKey: "nav.buses" },
-  { href: "#", labelKey: "nav.ferries" },
+  { href: "/buses", labelKey: "nav.buses" },
+  { href: "/ferries", labelKey: "nav.ferries" },
   { href: "/cars", labelKey: "nav.cars" }
 ];
 

@@ -2,19 +2,26 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FiRepeat, FiSearch } from "react-icons/fi";
+import { FiRepeat } from "react-icons/fi";
 import { CarLocationField } from "@/components/cars/CarLocationField";
 import { CarTimeField } from "@/components/cars/CarTimeField";
 import { CarDateRangePicker } from "@/components/date/CarDateRangePicker";
 import { MobileDateRangePicker } from "@/components/date/MobileDateRangePicker";
 import { CarSearchBottomBar } from "@/components/search/CarSearchBottomBar";
 import {
+  MobileSearchCard,
+  MobileSearchMetaRow,
+  MobileSearchSubmitButton,
+  MobileRouteFields,
+  mobileSearchBottomBarClass
+} from "@/components/search/MobileSearchBar";
+import {
   carsSearchGridClass,
   searchBarMaxWidthClass,
   searchBtnClass
 } from "@/components/search/searchFieldStyles";
 import { useI18n, useT } from "@/i18n/I18nProvider";
-import { formatCarDateWithWeekday, parseYmd, toYmd } from "@/lib/dateRange";
+import { addDaysYmd, formatCarDateWithWeekday, parseYmd, toYmd } from "@/lib/dateRange";
 import {
   buildCarSearchResultsHref,
   DEFAULT_DRIVER_AGE,
@@ -26,13 +33,6 @@ import { toast } from "@/lib/toast";
 
 function cn(...parts: Array<string | false | undefined | null>) {
   return parts.filter(Boolean).join(" ");
-}
-
-function addDaysYmd(ymd: string, days: number) {
-  const dt = parseYmd(ymd);
-  if (!dt) return "";
-  dt.setDate(dt.getDate() + days);
-  return toYmd(dt);
 }
 
 function defaultPickUpYmd() {
@@ -106,19 +106,25 @@ export function CarSearch({
   const [openPanel, setOpenPanel] = useState<"dates" | "pickUpTime" | "dropOffTime" | null>(null);
   const [mobileDatesOpen, setMobileDatesOpen] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setOpenBookingInNewTab(preferences.openBookingInNewTab);
   }, [preferences.openBookingInNewTab]);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
     function syncViewport() {
       setIsMobileViewport(window.innerWidth < 768);
     }
     syncViewport();
     window.addEventListener("resize", syncViewport);
     return () => window.removeEventListener("resize", syncViewport);
-  }, []);
+  }, [mounted]);
 
   useEffect(() => {
     if (!form.pickUpDate || !form.dropOffDate) return;
@@ -216,49 +222,33 @@ export function CarSearch({
       )}
     >
       <div className="w-full overflow-visible">
-        {/* Mobile */}
-        <div className="overflow-visible rounded-3xl bg-white text-slate-900 ring-1 ring-black/10 dark:bg-black dark:text-white dark:ring-white/15 md:hidden">
-          <div className="relative border-b border-slate-300/90 px-3 py-4 dark:border-white/10">
-            <div className="text-xs font-medium text-slate-500">{t("search.cars.pickUpLocation")}</div>
-            <input
-              value={pickUpDisplay}
-              onChange={(e) => setPickUpLocation(e.target.value)}
-              className="mt-1 w-full bg-transparent text-sm font-semibold outline-none placeholder:text-slate-400"
-              placeholder={locationPlaceholder}
-            />
-          </div>
-          <div className="relative border-b border-slate-300/90 px-3 py-4 dark:border-white/10">
-            <div className="text-xs font-medium text-slate-500">{t("search.cars.dropOffLocation")}</div>
-            <input
-              value={dropOffDisplay}
-              onChange={(e) => setDropOffLocation(e.target.value)}
-              className="mt-1 w-full bg-transparent text-sm font-semibold outline-none placeholder:text-slate-400"
-              placeholder={locationPlaceholder}
-            />
-            {pickUpDisplay && dropOffDisplay ? (
-              <button
-                type="button"
-                onClick={swapLocations}
-                className="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-white text-blue-600 shadow-md ring-1 ring-blue-100 dark:bg-zinc-950 dark:text-blue-400 dark:ring-white/10"
-                aria-label={tr("search.cars.swapLocations", "Swap pick-up and drop-off")}
-              >
-                <FiRepeat className="h-5 w-5" />
-              </button>
-            ) : null}
-          </div>
-          <button
-            type="button"
-            onClick={() => {
+        {/* Mobile — flights-style card */}
+        <MobileSearchCard>
+          <MobileRouteFields
+            fromValue={pickUpDisplay}
+            onFromChange={setPickUpLocation}
+            toValue={dropOffDisplay}
+            onToChange={setDropOffLocation}
+            fromPlaceholder={t("search.cars.pickUpLocation")}
+            toPlaceholder={t("search.cars.dropOffLocation")}
+            canSwap={Boolean(pickUpDisplay && dropOffDisplay)}
+            onSwap={swapLocations}
+            swapAriaLabel={tr("search.cars.swapLocations", "Swap pick-up and drop-off")}
+          />
+          <MobileSearchMetaRow
+            dateLabel={mobileDateLabel}
+            onDateClick={() => {
               setOpenPanel(null);
               setMobileDatesOpen(true);
             }}
-            className="flex w-full border-b border-slate-300/90 px-3 py-4 text-left dark:border-white/10"
-          >
-            <div className="text-xs font-medium text-slate-500">{t("search.cars.dates")}</div>
-            <div className="mt-1 line-clamp-2 text-sm font-semibold leading-snug">{mobileDateLabel}</div>
-          </button>
-          <div className="grid grid-cols-2 gap-2 border-b border-slate-300/90 p-3 dark:border-white/10">
+            showClearDates={Boolean(form.pickUpDate || form.dropOffDate)}
+            onClearDates={() => patchForm({ pickUpDate: "", dropOffDate: "" })}
+            clearDatesAriaLabel={tr("search.cars.clearDates", "Clear dates")}
+          />
+          <div className="grid grid-cols-2 gap-2 border-t border-slate-300/90 px-3 py-3 dark:border-white/10">
             <CarTimeField
+              layout="mobile"
+              className="!h-auto min-h-0 py-2"
               label={t("search.cars.pickUpTime")}
               value={form.pickUpTime}
               onChange={(v) => patchForm({ pickUpTime: v })}
@@ -266,6 +256,8 @@ export function CarSearch({
               onOpenChange={(o) => setOpenPanel(o ? "pickUpTime" : null)}
             />
             <CarTimeField
+              layout="mobile"
+              className="!h-auto min-h-0 py-2"
               label={t("search.cars.dropOffTime")}
               value={form.dropOffTime}
               onChange={(v) => patchForm({ dropOffTime: v })}
@@ -273,28 +265,24 @@ export function CarSearch({
               onOpenChange={(o) => setOpenPanel(o ? "dropOffTime" : null)}
             />
           </div>
-          <div className="border-t border-slate-300/90 p-3 dark:border-white/10">
-            <button type="button" onClick={onSearch} className={searchBtnClass}>
-              <FiSearch className="mr-2 h-5 w-5" aria-hidden />
-              {t("search.cars.search")}
-            </button>
-          </div>
-        </div>
+          {mounted && isMobileViewport && mobileDatesOpen ? (
+            <MobileDateRangePicker
+              departDate={form.pickUpDate}
+              returnDate={form.dropOffDate}
+              initialField="depart"
+              onChange={({ departDate, returnDate }) =>
+                patchForm({ pickUpDate: departDate, dropOffDate: returnDate })
+              }
+              onClose={() => setMobileDatesOpen(false)}
+              departureLabel={t("search.cars.pickUpDate")}
+              returnLabel={t("search.cars.dropOffDate")}
+            />
+          ) : null}
+        </MobileSearchCard>
 
-        {isMobileViewport && mobileDatesOpen ? (
-          <MobileDateRangePicker
-            departDate={form.pickUpDate}
-            returnDate={form.dropOffDate}
-            initialField="depart"
-            cycleRangeOnDayClick
-            onChange={({ departDate, returnDate }) => patchForm({ pickUpDate: departDate, dropOffDate: returnDate })}
-            onClose={() => setMobileDatesOpen(false)}
-            departureLabel={t("search.cars.pickUpDate")}
-            returnLabel={t("search.cars.dropOffDate")}
-          />
-        ) : null}
+        <MobileSearchSubmitButton onClick={onSearch}>{t("search.cars.search")}</MobileSearchSubmitButton>
 
-        {bottomBar ? <div className="mt-4 md:hidden">{bottomBar}</div> : null}
+        {bottomBar ? <div className={mobileSearchBottomBarClass}>{bottomBar}</div> : null}
 
         {/* Desktop — full 1440px width */}
         <div className={carsSearchGridClass}>
@@ -334,6 +322,7 @@ export function CarSearch({
             onOpenChange={(o) => setOpenPanel(o ? "dates" : null)}
           />
           <CarTimeField
+            layout="desktop"
             label={t("search.cars.pickUpTime")}
             value={form.pickUpTime}
             onChange={(v) => patchForm({ pickUpTime: v })}
@@ -341,6 +330,7 @@ export function CarSearch({
             onOpenChange={(o) => setOpenPanel(o ? "pickUpTime" : null)}
           />
           <CarTimeField
+            layout="desktop"
             label={t("search.cars.dropOffTime")}
             value={form.dropOffTime}
             onChange={(v) => patchForm({ dropOffTime: v })}

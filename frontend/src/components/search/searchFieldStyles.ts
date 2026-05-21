@@ -23,3 +23,11 @@ export const searchBarMaxWidthClass = "mx-auto w-full max-w-[1440px]";
 /** Cars desktop grid: locations | dates | times (wide enough for one-line labels) | search button */
 export const carsSearchGridClass =
   "relative hidden w-full gap-2 overflow-visible md:grid md:grid-cols-[minmax(0,1.06fr)_minmax(0,1.06fr)_minmax(0,1.42fr)_minmax(9.25rem,9.75rem)_minmax(9.25rem,9.75rem)_10.25rem] md:items-stretch";
+
+/** Buses desktop grid: from | to | departure + quick dates | search button */
+export const busesSearchGridClass =
+  "relative hidden w-full gap-2 overflow-visible md:grid md:grid-cols-[minmax(0,1.06fr)_minmax(0,1.06fr)_minmax(0,1.28fr)_minmax(12.5rem,13.5rem)] md:items-stretch";
+
+/** Ferries: from | to | departure–return period | passengers | search */
+export const ferriesSearchGridClass =
+  "relative hidden w-full gap-2 overflow-visible md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.55fr)_minmax(9rem,10.5rem)_minmax(11rem,12.25rem)] md:items-stretch";

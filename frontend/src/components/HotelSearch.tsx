@@ -2,13 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FiMapPin, FiSearch } from "react-icons/fi";
+import { FiUser } from "react-icons/fi";
 import { HotelDateRangePicker } from "@/components/date/HotelDateRangePicker";
 import { MobileDateRangePicker } from "@/components/date/MobileDateRangePicker";
 import { HotelsGuestsPicker } from "@/components/HotelsGuestsPicker";
 import { HotelSearchBottomBar } from "@/components/search/HotelSearchBottomBar";
+import {
+  MobileDestinationField,
+  MobileSearchCard,
+  MobileSearchMetaRow,
+  MobileSearchSecondaryRow,
+  MobileSearchSubmitButton,
+  mobileSearchBottomBarClass
+} from "@/components/search/MobileSearchBar";
 import { useI18n, useT } from "@/i18n/I18nProvider";
-import { formatHotelStayRangeLabel, parseYmd, toYmd } from "@/lib/dateRange";
+import { addDaysYmd, formatHotelStayRangeLabel, parseYmd, toYmd } from "@/lib/dateRange";
 import { buildHotelSearchResultsHref, type HotelGuestsState } from "@/lib/hotelSearch";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setHotelLastQuery, setHotelPreferences, setHotelSearchForm } from "@/store/hotelsSlice";
@@ -16,13 +24,6 @@ import { toast } from "@/lib/toast";
 
 function cn(...parts: Array<string | false | undefined | null>) {
   return parts.filter(Boolean).join(" ");
-}
-
-function addDaysYmd(ymd: string, days: number) {
-  const dt = parseYmd(ymd);
-  if (!dt) return "";
-  dt.setDate(dt.getDate() + days);
-  return toYmd(dt);
 }
 
 function defaultCheckInYmd() {
@@ -102,6 +103,7 @@ export function HotelSearch({
   const [openBookingInNewTab, setOpenBookingInNewTab] = useState(preferences.openBookingInNewTab);
   const [mobileDatesOpen, setMobileDatesOpen] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setTravelForWork(preferences.travelForWork);
@@ -109,13 +111,18 @@ export function HotelSearch({
   }, [preferences.travelForWork, preferences.openBookingInNewTab]);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
     function syncViewport() {
       setIsMobileViewport(window.innerWidth < 768);
     }
     syncViewport();
     window.addEventListener("resize", syncViewport);
     return () => window.removeEventListener("resize", syncViewport);
-  }, []);
+  }, [mounted]);
 
   useEffect(() => {
     if (!checkIn || !checkOut) return;
@@ -199,12 +206,6 @@ export function HotelSearch({
     />
   ) : null;
 
-  const searchButton = (
-    <button type="button" onClick={onSearch} className={searchBtnClass}>
-      {t("search.hotels.search")}
-    </button>
-  );
-
   return (
     <div
       className={cn(
@@ -213,55 +214,46 @@ export function HotelSearch({
       )}
     >
       <div className="w-full overflow-visible">
-        <div className="overflow-hidden rounded-3xl bg-white text-slate-900 ring-1 ring-black/10 dark:bg-black dark:text-white dark:ring-white/15 md:hidden">
-          <div className="flex items-center gap-3 border-b border-slate-300/90 px-3 py-4 dark:border-white/10">
-            <FiSearch className="h-5 w-5 shrink-0 text-slate-900 dark:text-white/80" />
-            <div className="min-w-0 flex-1">
-              <div className="text-xs text-slate-500">{t("search.to")}</div>
-              <input
-                value={destination}
-                onChange={(e) => setDestination(e.target.value)}
-                className="mt-1 w-full bg-transparent text-sm font-semibold outline-none placeholder:text-slate-400 dark:placeholder:text-white/35"
-                placeholder={tr("search.hotels.destinationPlaceholder", "City, hotel, or area")}
-              />
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setMobileDatesOpen(true)}
-            className="flex w-full items-center gap-3 border-b border-slate-300/90 px-3 py-4 text-left dark:border-white/10"
-          >
-            <div className="min-w-0 flex-1">
-              <div className="text-xs text-slate-500">{t("search.hotels.dates")}</div>
-              <div className="mt-1 line-clamp-2 text-sm font-semibold leading-snug">{mobileDateLabel}</div>
-            </div>
-          </button>
-          <div className="flex items-center gap-3 px-3 py-4">
-            <FiMapPin className="h-5 w-5 shrink-0 text-slate-500" />
-            <div className="min-w-0 flex-1">
-              <HotelsGuestsPicker value={guests} onChange={setGuests} />
-            </div>
-          </div>
-          <div className="border-t border-slate-300/90 p-3 dark:border-white/10">{searchButton}</div>
-        </div>
-
-        {bottomBar ? <div className="mt-4 md:hidden">{bottomBar}</div> : null}
-
-        {isMobileViewport && mobileDatesOpen ? (
-          <MobileDateRangePicker
-            departDate={checkIn}
-            returnDate={checkOut}
-            initialField="depart"
-            cycleRangeOnDayClick
-            onChange={({ departDate: nextIn, returnDate: nextOut }) => {
-              setCheckIn(nextIn);
-              setCheckOut(nextOut);
-            }}
-            onClose={() => setMobileDatesOpen(false)}
-            departureLabel={t("search.hotels.checkIn")}
-            returnLabel={t("search.hotels.checkOut")}
+        <MobileSearchCard>
+          <MobileDestinationField
+            value={destination}
+            onChange={setDestination}
+            placeholder={tr("search.hotels.destinationPlaceholder", "City, hotel, or area")}
           />
-        ) : null}
+          <MobileSearchMetaRow
+            dateLabel={mobileDateLabel}
+            onDateClick={() => setMobileDatesOpen(true)}
+            showClearDates={Boolean(checkIn || checkOut)}
+            onClearDates={() => {
+              setCheckIn("");
+              setCheckOut("");
+            }}
+            clearDatesAriaLabel={tr("search.hotels.clearDates", "Clear dates")}
+          />
+          <MobileSearchSecondaryRow
+            icon={<FiUser className="h-5 w-5 shrink-0 text-slate-500 dark:text-white/70" aria-hidden />}
+          >
+            <HotelsGuestsPicker value={guests} onChange={setGuests} />
+          </MobileSearchSecondaryRow>
+          {mounted && isMobileViewport && mobileDatesOpen ? (
+            <MobileDateRangePicker
+              departDate={checkIn}
+              returnDate={checkOut}
+              initialField="depart"
+              onChange={({ departDate: nextIn, returnDate: nextOut }) => {
+                setCheckIn(nextIn);
+                setCheckOut(nextOut);
+              }}
+              onClose={() => setMobileDatesOpen(false)}
+              departureLabel={t("search.hotels.checkIn")}
+              returnLabel={t("search.hotels.checkOut")}
+            />
+          ) : null}
+        </MobileSearchCard>
+
+        <MobileSearchSubmitButton onClick={onSearch}>{t("search.hotels.search")}</MobileSearchSubmitButton>
+
+        {bottomBar ? <div className={mobileSearchBottomBarClass}>{bottomBar}</div> : null}
 
         <div className="hidden w-full grid-cols-1 gap-2 overflow-visible md:grid md:grid-cols-[minmax(0,1.4fr)_minmax(0,1.75fr)_minmax(8.5rem,10.5rem)_minmax(12.5rem,1.55fr)]">
           <div className={fieldShell}>

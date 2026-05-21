@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { FiCalendar, FiX } from "react-icons/fi";
-import { normalizeRangeSelection } from "@/lib/dateRange";
+import { applyFerryRangeDayClick, applyHotelRangeDayClick } from "@/lib/dateRange";
 
 type Props = {
   departDate: string;
@@ -15,6 +15,10 @@ type Props = {
   returnLabel: string;
   /** Hotels: click start → end → next click restarts range (clears end, sets new start). */
   cycleRangeOnDayClick?: boolean;
+  /** Ferries: later clicks move return; use with cycleRangeOnDayClick. */
+  ferryRangeSelection?: boolean;
+  /** Buses: single departure date only — hide return tab and close after pick. */
+  departOnly?: boolean;
 };
 
 function pad2(n: number) {
@@ -68,7 +72,9 @@ export function MobileDateRangePicker({
   onClose,
   departureLabel,
   returnLabel,
-  cycleRangeOnDayClick = false
+  cycleRangeOnDayClick = false,
+  ferryRangeSelection = false,
+  departOnly = false
 }: Props) {
   const panelRef = useRef<HTMLDivElement | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -116,11 +122,18 @@ export function MobileDateRangePicker({
   function selectDay(day: Date) {
     const ymd = toYmd(day);
     if (cycleRangeOnDayClick) {
-      const next = normalizeRangeSelection(departDate, returnDate, ymd);
+      const next = ferryRangeSelection
+        ? applyFerryRangeDayClick(departDate, returnDate, ymd)
+        : applyHotelRangeDayClick(departDate, returnDate, ymd);
       onChange({ departDate: next.from, returnDate: next.to });
       return;
     }
     if (activeField === "depart") {
+      if (departOnly) {
+        onChange({ departDate: ymd, returnDate: "" });
+        window.setTimeout(() => onClose(), 0);
+        return;
+      }
       const nextReturn = returnDate && returnDate < ymd ? "" : returnDate;
       onChange({ departDate: ymd, returnDate: nextReturn });
       setActiveField("return");
@@ -153,33 +166,40 @@ export function MobileDateRangePicker({
         </div>
 
         <div className="px-4 py-4">
-          <div className="grid grid-cols-2 rounded-2xl bg-white ring-1 ring-slate-200 dark:bg-black/30 dark:ring-white/10">
-            <button
-              type="button"
-              onClick={() => setActiveField("depart")}
-              className={[
-                "flex items-center justify-between rounded-l-2xl px-4 py-2.5 text-left text-[14px] font-medium md:text-base",
-                activeField === "depart"
-                  ? "border-2 border-orange-500 bg-white text-slate-900 dark:bg-[#171717] dark:text-white"
-                  : "border border-slate-200 text-slate-500 dark:border-white/10 dark:text-white/60"
-              ].join(" ")}
-            >
-              <span>{departureLabel}</span>
+          {departOnly ? (
+            <div className="flex items-center justify-between rounded-2xl border-2 border-orange-500 bg-white px-4 py-2.5 dark:bg-[#171717]">
+              <span className="text-[14px] font-medium text-slate-900 dark:text-white">{departureLabel}</span>
               <FiCalendar className="h-6 w-6 text-blue-500" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveField("return")}
-              className={[
-                "rounded-r-2xl px-4 py-2.5 text-left text-[14px] font-medium md:text-base",
-                activeField === "return"
-                  ? "border-2 border-orange-500 bg-white text-slate-900 dark:bg-[#171717] dark:text-white"
-                  : "border border-slate-200 text-slate-500 dark:border-white/10 dark:text-white/60"
-              ].join(" ")}
-            >
-              {returnLabel}
-            </button>
-          </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 rounded-2xl bg-white ring-1 ring-slate-200 dark:bg-black/30 dark:ring-white/10">
+              <button
+                type="button"
+                onClick={() => setActiveField("depart")}
+                className={[
+                  "flex items-center justify-between rounded-l-2xl px-4 py-2.5 text-left text-[14px] font-medium md:text-base",
+                  activeField === "depart"
+                    ? "border-2 border-orange-500 bg-white text-slate-900 dark:bg-[#171717] dark:text-white"
+                    : "border border-slate-200 text-slate-500 dark:border-white/10 dark:text-white/60"
+                ].join(" ")}
+              >
+                <span>{departureLabel}</span>
+                <FiCalendar className="h-6 w-6 text-blue-500" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveField("return")}
+                className={[
+                  "rounded-r-2xl px-4 py-2.5 text-left text-[14px] font-medium md:text-base",
+                  activeField === "return"
+                    ? "border-2 border-orange-500 bg-white text-slate-900 dark:bg-[#171717] dark:text-white"
+                    : "border border-slate-200 text-slate-500 dark:border-white/10 dark:text-white/60"
+                ].join(" ")}
+              >
+                {returnLabel}
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="h-[calc(100vh-155px)] overflow-y-auto px-4 pb-8">
@@ -201,7 +221,9 @@ export function MobileDateRangePicker({
                     const isOutside = day.getMonth() !== monthIdx;
                     const isPast = startOfDay(day).getTime() < today.getTime();
                     const isBeforeDepart =
-                      activeField === "return" && depart
+                      !cycleRangeOnDayClick &&
+                      activeField === "return" &&
+                      depart
                         ? startOfDay(day).getTime() < startOfDay(depart).getTime()
                         : false;
                     const disabled = isPast || isBeforeDepart;
